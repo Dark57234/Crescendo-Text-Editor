@@ -32,7 +32,7 @@ public class CrescendoTextEditor {
     private static String templateName = "Default";
     private static final JLabel posLabel = new JLabel("Ln 1, Col 1");
     private static final JLabel charLabel = new JLabel("0 characters");
-    private static JTextField sizeField; // the number box in the toolbar
+    private static JComboBox<Integer> sizeBox; // the font size dropdown in the toolbar
     private static JComboBox<String> fontBox; // the font dropdown in the toolbar
     private static boolean updatingToolbar = false; // true while WE change the dropdown (not the user)
 
@@ -302,26 +302,30 @@ public class CrescendoTextEditor {
             fontBox.setSelectedItem(font);
             updatingToolbar = false;
         }
-        if (sizeField != null) sizeField.setText(String.valueOf(size));
+        if (sizeBox != null) {
+            updatingToolbar = true;
+            sizeBox.setSelectedItem(size);
+            updatingToolbar = false;
+        }
     }
 
     private static void customTemplate() {
         JComboBox<String> fonts = new JComboBox<>(
                 GraphicsEnvironment.getLocalGraphicsEnvironment().getAvailableFontFamilyNames());
         fonts.setSelectedItem(font);
-        JSpinner sizeBox = new JSpinner(new SpinnerNumberModel(size, 6, 96, 1));
+        JSpinner sizeBoxSpinner = new JSpinner(new SpinnerNumberModel(size, 6, 96, 1));
         JComboBox<String> spacingBox = new JComboBox<>(new String[]{"Single", "1.15", "1.5", "Double"});
         float[] values = {0f, 0.15f, 0.5f, 1f};
 
         JPanel panel = new JPanel(new GridLayout(0, 2, 6, 6));
         panel.add(new JLabel("Font:"));         panel.add(fonts);
-        panel.add(new JLabel("Size:"));         panel.add(sizeBox);
+        panel.add(new JLabel("Size:"));         panel.add(sizeBoxSpinner);
         panel.add(new JLabel("Line spacing:")); panel.add(spacingBox);
 
         int answer = JOptionPane.showConfirmDialog(frame, panel, "Custom Format", JOptionPane.OK_CANCEL_OPTION);
         if (answer != JOptionPane.OK_OPTION) return;
 
-        applyTemplate("Custom", (String) fonts.getSelectedItem(), (Integer) sizeBox.getValue(),
+        applyTemplate("Custom", (String) fonts.getSelectedItem(), (Integer) sizeBoxSpinner.getValue(),
                 values[spacingBox.getSelectedIndex()]);
     }
 
@@ -368,11 +372,11 @@ public class CrescendoTextEditor {
         SimpleAttributeSet s = new SimpleAttributeSet();
         StyleConstants.setFontSize(s, newSize);
         style(s);
-        sizeField.setText(String.valueOf(newSize));
-    }
-
-    private static void changeSize(int change) {
-        setSize(StyleConstants.getFontSize(textPane.getCharacterAttributes()) + change);
+        if (sizeBox != null) {
+            updatingToolbar = true;
+            sizeBox.setSelectedItem(newSize);
+            updatingToolbar = false;
+        }
     }
 
     private static void pickColor() {
@@ -432,21 +436,18 @@ public class CrescendoTextEditor {
         });
         panel.add(fontBox);
 
-        panel.add(button("-", e -> changeSize(-1)));
-
-        // Number box: type a size and press Enter
-        sizeField = new JTextField(String.valueOf(size), 3);
-        sizeField.setHorizontalAlignment(SwingConstants.CENTER);
-        sizeField.addActionListener(e -> {
-            try {
-                setSize(Integer.parseInt(sizeField.getText().trim()));
-            } catch (NumberFormatException ex) {
-                updateStatus(); // bad input: put the real size back
+        // Font Size Dropdown (Replaces bugged -, textfield, + buttons)
+        Integer[] standardSizes = {8, 9, 10, 11, 12, 14, 16, 18, 20, 22, 24, 26, 28, 36, 48, 72};
+        sizeBox = new JComboBox<>(standardSizes);
+        sizeBox.setSelectedItem(size);
+        sizeBox.setFocusable(false);
+        sizeBox.addActionListener(e -> {
+            if (!updatingToolbar && sizeBox.getSelectedItem() != null) {
+                setSize((Integer) sizeBox.getSelectedItem());
             }
         });
-        panel.add(sizeField);
+        panel.add(sizeBox);
 
-        panel.add(button("+", e -> changeSize(1)));
         panel.add(button("B", e -> toggle("bold")));
         panel.add(button("I", e -> toggle("italic")));
         panel.add(button("U", e -> toggle("underline")));
@@ -502,8 +503,24 @@ public class CrescendoTextEditor {
         int col = pos - root.getElement(line).getStartOffset();
         posLabel.setText("Ln " + (line + 1) + ", Col " + (col + 1));
         charLabel.setText(textPane.getDocument().getLength() + " characters");
-        if (sizeField != null) { // show the size of the text at the cursor
-            sizeField.setText(String.valueOf(StyleConstants.getFontSize(textPane.getCharacterAttributes())));
+        
+        if (sizeBox != null) { 
+            // Look up the font size from the actual document text element at the caret, 
+            // falling back to character/input attributes if needed.
+            int currentSize = size;
+            try {
+                StyledDocument doc = textPane.getStyledDocument();
+                Element element = doc.getCharacterElement(Math.max(0, pos - 1));
+                if (element != null) {
+                    currentSize = StyleConstants.getFontSize(element.getAttributes());
+                }
+            } catch (Exception e) {
+                currentSize = StyleConstants.getFontSize(textPane.getCharacterAttributes());
+            }
+            
+            updatingToolbar = true;
+            sizeBox.setSelectedItem(currentSize);
+            updatingToolbar = false;
         }
     }
 
