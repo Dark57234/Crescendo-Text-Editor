@@ -223,14 +223,31 @@ public class CrescendoTextEditor {
 
     private static void openFile() {
         JFileChooser chooser = new JFileChooser();
-        if (chooser.showOpenDialog(frame) != JFileChooser.APPROVE_OPTION) return;
+        if (chooser.showOpenDialog(frame) != JFileChooser.APPROVE_OPTION) {
+            return;
+        }
+
+        int answer = JOptionPane.showConfirmDialog(
+                frame,
+                "Open this file? Any unsaved text will be lost. :(",
+                "Open File",
+                JOptionPane.YES_NO_OPTION
+        );
+
+        if (answer != JOptionPane.YES_OPTION) {
+            return;
+        }
+
         try {
             textPane.setText(Files.readString(chooser.getSelectedFile().toPath()));
             reapplyFormat();
             undo.discardAllEdits();
             textPane.setCaretPosition(0);
         } catch (Exception ex) {
-            JOptionPane.showMessageDialog(frame, "Uh Oh! Could not open file: " + ex.getMessage());
+            JOptionPane.showMessageDialog(
+                    frame,
+                    "Uh Oh! Could not open file: " + ex.getMessage()
+            );
         }
     }
 
