@@ -11,6 +11,7 @@ import java.text.DecimalFormat;
 import java.text.MessageFormat;
 import java.time.Duration;
 import java.lang.reflect.Field;
+import music.MusicDock;
 
 
 /**
@@ -27,6 +28,7 @@ public class CrescendoTextEditor {
     
     private static JFrame frame;
     private static JTextPane textPane;
+    private static MusicDock musicDock;
     //Records every edit for our little undo button
     private static final UndoManager undo = new UndoManager();
     //The default format for our document
@@ -53,6 +55,10 @@ public class CrescendoTextEditor {
 
 
     private static void createAndShowGui() {
+        // Menus and tooltips must be real windows so they show on top of the music player
+        JPopupMenu.setDefaultLightWeightPopupEnabled(false);
+        ToolTipManager.sharedInstance().setLightWeightPopupEnabled(false);
+
         frame = new JFrame("Text Editor");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setSize(900, 700);
@@ -89,6 +95,14 @@ public class CrescendoTextEditor {
         background.setBackground(new Color(10, 54, 30));
         background.setBorder(BorderFactory.createEmptyBorder(20, 25, 20, 25));
         background.add(editorPanel, BorderLayout.CENTER);
+
+        musicDock = new MusicDock(background, textPane);
+        frame.addWindowListener(new java.awt.event.WindowAdapter() {
+            @Override
+            public void windowClosing(java.awt.event.WindowEvent e) {
+                musicDock.shutdown();
+            }
+        });
 
         frame.setContentPane(background);
         frame.setVisible(true);
@@ -164,9 +178,11 @@ public class CrescendoTextEditor {
         pomodoroMenu.add(startItem);
         pomodoroMenu.add(settingsItem);
 
-        // Music (nothing here cause idk how to build)
+        // Music: shows or hides the YouTube player on the right side
         JMenu musicMenu = new JMenu("Music \u25B6");
-        musicMenu.setEnabled(false);
+        JMenuItem musicToggle = new JMenuItem("Show / Hide Player");
+        musicToggle.addActionListener(e -> musicDock.toggle());
+        musicMenu.add(musicToggle);
 
         // Clicking this sets the WHOLE document to the template's font and size
         templateButton.setFont(new Font("Arial", Font.BOLD, 12));

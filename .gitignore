@@ -3,3 +3,6 @@ bin/
 out/
 .idea/
 *.iml
+# Music player
+jcef-bundle/
+youtube-api.properties
