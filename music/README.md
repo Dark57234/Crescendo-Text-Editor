@@ -5,18 +5,16 @@ It uses an embedded Chromium browser (JCEF), so it needs a few extra steps the f
 
 ## What you need
 - **JDK 17 or newer**
-- The jars in `lib/jcef/` (already in the repo)
-- The file `youtube-api.properties` with the API key (ask Franklin — it is **not** in the repo)
+- The jars in `lib/jcef/` (already in the repo)\
 
-## 1. Add the API key file
-Create a file named exactly `youtube-api.properties` in the **repo root**
+## 1. API key file
+There is a file named `youtube-api.properties` in the **repo root**
 (next to `CrescendoTextEditor.java`) with one line:
 
 ```properties
-YT_API_KEY=paste-the-key-here
+YT_API_KEY=KEY
 ```
 
-This file is in `.gitignore`. **Never commit it** and never paste the key in the group chat publicly.
 The key is shared by the whole team: about 99 searches per day in total (each search or
 "Load more" costs 100 of the 10,000 daily units), so don't spam the Search button.
 
