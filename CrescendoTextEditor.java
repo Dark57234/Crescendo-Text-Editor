@@ -10,6 +10,8 @@ import java.nio.file.Files;
 import java.text.DecimalFormat;
 import java.text.MessageFormat;
 import java.time.Duration;
+import java.lang.reflect.Field;
+
 
 /**
  * Author: Sophie, Anton, Franklin, John
@@ -103,6 +105,7 @@ public class CrescendoTextEditor {
         add(fileMenu, "New", e -> newDocument());
         add(fileMenu, "Open", e -> openFile());
         add(fileMenu, "Export", e -> exportFile());
+        add(fileMenu, "Import to Note", e -> importToNote(textPane, frame));
         add(fileMenu, "Print", e -> printDocument());
 
         // Edit
@@ -469,11 +472,104 @@ public class CrescendoTextEditor {
         JTextArea area = new JTextArea(8, 20);
         area.setLineWrap(true);
         area.setBackground(new Color(255, 249, 196));
-        dialog.add(new JScrollPane(area));
+        dialog.add(new JScrollPane(area), BorderLayout.CENTER);
+
+        JButton saveNoteButton = button("Save", e -> {
+            if (saveNote(dialog, area.getText())) dialog.dispose(); // close after a successful save
+        });
+        JPanel buttonRow = new JPanel(new FlowLayout(FlowLayout.RIGHT, 4, 4));
+        buttonRow.add(saveNoteButton);
+        dialog.add(buttonRow, BorderLayout.SOUTH);
+
         dialog.pack();
         dialog.setLocationRelativeTo(frame);
         dialog.setVisible(true);
     }
+    public static void importToNote() {
+        try {
+            JTextPane pane = (JTextPane) readStatic("textPane");
+            JFrame frame = (JFrame) readStatic("frame");
+            importToNote(pane, frame);
+        } catch (ReflectiveOperationException ex) {
+            JOptionPane.showMessageDialog(null, "Uh Oh! Could not reach the text editor: " + ex.getMessage());
+        }
+    }
+ 
+    public static void importToNote(JTextPane source, Component parent) {
+        if (source == null) {
+            JOptionPane.showMessageDialog(parent, "The text editor isn't open yet.");
+            return;
+        }
+ 
+        String selected = source.getSelectedText();
+        String text = (selected != null && !selected.isEmpty()) ? selected : source.getText();
+ 
+        if (text == null || text.trim().isEmpty()) {
+            JOptionPane.showMessageDialog(parent, "There's no text in the editor to import. :(");
+            return;
+        }
+        openNote(parent, text);
+    }
+ 
+    /** Opens a sticky note that looks like the one from New Note, already filled in. */
+    private static void openNote(Component parent, String text) {
+        Window owner = (parent instanceof Window) ? (Window) parent : null;
+        JDialog dialog = new JDialog(owner, "Note", Dialog.ModalityType.MODELESS);
+ 
+        JTextArea area = new JTextArea(text, 8, 20);
+        area.setLineWrap(true);
+        area.setWrapStyleWord(true);
+        area.setBackground(new Color(255, 249, 196));
+        area.setCaretPosition(0);
+        dialog.add(new JScrollPane(area), BorderLayout.CENTER);
+ 
+        JButton save = new JButton("Save");
+        save.setFocusable(false);
+        save.addActionListener(e -> {
+            if (saveNote(dialog, area.getText())) dialog.dispose();
+        });
+        JPanel buttonRow = new JPanel(new FlowLayout(FlowLayout.RIGHT, 4, 4));
+        buttonRow.add(save);
+        dialog.add(buttonRow, BorderLayout.SOUTH);
+ 
+        dialog.pack();
+        dialog.setLocationRelativeTo(parent);
+        dialog.setVisible(true);
+    }
+ 
+    /** Same save behavior as the regular note: default name "New Note", closes only on success. */
+    private static boolean saveNote(Component parent, String noteText) {
+        JFileChooser chooser = new JFileChooser();
+        chooser.setDialogTitle("Save Note");
+        chooser.setSelectedFile(new File("New Note.txt"));
+        if (chooser.showSaveDialog(parent) != JFileChooser.APPROVE_OPTION) return false;
+ 
+        File file = chooser.getSelectedFile();
+        if (!file.getName().contains(".")) file = new File(file.getPath() + ".txt");
+ 
+        if (file.exists()) {
+            int answer = JOptionPane.showConfirmDialog(parent,
+                    file.getName() + " already exists. Replace it?", "Save Note",
+                    JOptionPane.YES_NO_OPTION);
+            if (answer != JOptionPane.YES_OPTION) return false;
+        }
+ 
+        try {
+            Files.writeString(file.toPath(), noteText);
+            return true;
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(parent, "Uh Oh! Could not save note: " + ex.getMessage());
+            return false;
+        }
+    }
+ 
+    /** Reads a private static field from CrescendoTextEditor. */
+    private static Object readStatic(String name) throws ReflectiveOperationException {
+        Field field = CrescendoTextEditor.class.getDeclaredField(name);
+        field.setAccessible(true);
+        return field.get(null);
+    }
+ 
 
     private static JPanel createStatusBar() {
         JPanel bar = new JPanel(new BorderLayout());
@@ -489,7 +585,7 @@ public class CrescendoTextEditor {
         JButton help = button("Help", e -> JOptionPane.showMessageDialog(frame,
                 "Ctrl+Z = Undo, Ctrl+Y = Redo\n"
                 + "Pomodoro > Settings to set the timer, then Pomodoro > Start.\n"
-                + "New Note opens a sticky note you can type in."));
+                + "New Note opens a sticky note you can type in and save to a txt file.\n"));
 
         bar.add(left, BorderLayout.WEST);
         bar.add(help, BorderLayout.EAST);
