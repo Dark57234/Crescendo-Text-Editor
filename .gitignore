@@ -5,4 +5,3 @@ out/
 *.iml
 # Music player
 jcef-bundle/
-youtube-api.properties
