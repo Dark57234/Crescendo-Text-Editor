@@ -405,12 +405,31 @@ public class CrescendoTextEditor {
         int last = root.getElementIndex(textPane.getSelectionEnd());
         try {
             for (int i = last; i >= first; i--) { // bottom to top so positions don't shift
-                doc.insertString(root.getElement(i).getStartOffset(), "\u2022 ", null);
+                int start = root.getElement(i).getStartOffset();
+                // Give the bullet the same font/size/color as the line it is added to.
+                AttributeSet lineAttrs = doc.getCharacterElement(start).getAttributes();
+                AttributeSet typing = textPane.getInputAttributes();
+                Object fam = pick(lineAttrs, typing, StyleConstants.FontFamily);
+                Object sz = pick(lineAttrs, typing, StyleConstants.FontSize);
+                Object col = pick(lineAttrs, typing, StyleConstants.Foreground);
+
+                SimpleAttributeSet bulletAttrs = new SimpleAttributeSet();
+                bulletAttrs.addAttribute(StyleConstants.FontFamily, fam != null ? fam : font);
+                bulletAttrs.addAttribute(StyleConstants.FontSize, sz != null ? sz : Integer.valueOf(size));
+                if (col != null) bulletAttrs.addAttribute(StyleConstants.Foreground, col);
+                doc.insertString(start, "\u2022 ", bulletAttrs);
             }
         } catch (BadLocationException ex) {
             // ignore
         }
         textPane.requestFocusInWindow();
+    }
+
+    /** Returns the attribute set directly on the line, else on the typing style, else null. */
+    private static Object pick(AttributeSet line, AttributeSet typing, Object key) {
+        if (line.isDefined(key)) return line.getAttribute(key);
+        if (typing.isDefined(key)) return typing.getAttribute(key);
+        return null;
     }
 
     private static void doUndo() {
@@ -585,8 +604,7 @@ public class CrescendoTextEditor {
         JButton help = button("Help", e -> JOptionPane.showMessageDialog(frame,
                 "Ctrl+Z = Undo, Ctrl+Y = Redo\n"
                 + "Pomodoro > Settings to set the timer, then Pomodoro > Start.\n"
-                + "New Note opens a sticky note you can type in and save to a txt file.\n"
-                + "Import text from the editor into a note by going File > Import to Note.\n"));
+                + "New Note opens a sticky note you can type in and save to a txt file.\n"));
 
         bar.add(left, BorderLayout.WEST);
         bar.add(help, BorderLayout.EAST);
