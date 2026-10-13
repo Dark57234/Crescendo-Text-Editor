@@ -59,7 +59,7 @@ public class CrescendoTextEditor {
         JPopupMenu.setDefaultLightWeightPopupEnabled(false);
         ToolTipManager.sharedInstance().setLightWeightPopupEnabled(false);
 
-        frame = new JFrame("Text Editor");
+        frame = new JFrame("Crescendo Text Editor");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setSize(900, 700);
         frame.setLocationRelativeTo(null);
