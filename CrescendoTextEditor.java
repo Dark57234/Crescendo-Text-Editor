@@ -605,7 +605,7 @@ public class CrescendoTextEditor {
                 "Ctrl+Z = Undo, Ctrl+Y = Redo\n"
                 + "Pomodoro > Settings to set the timer, then Pomodoro > Start.\n"
                 + "New Note opens a sticky note you can type in and save to a txt file.\n"
-                + "Import text from the editor into a note by going File > Import to Note.\n"));));
+                + "Import text from the editor into a note by going File > Import to Note.\n"));
 
         bar.add(left, BorderLayout.WEST);
         bar.add(help, BorderLayout.EAST);
